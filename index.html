@@ -433,7 +433,20 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 
 /* ============================== DATA ============================== */
-const KEY = 'house-92-149-ledger-v1';
+const BASE_KEY = 'house-92-149-ledger-v1', CLOUD_KEY = 'house-92-149-cloud-v1';
+let CLOUD = null; try { CLOUD = JSON.parse(localStorage.getItem(CLOUD_KEY) || 'null'); } catch(e) {}
+function hashConfig(){
+  const h = location.hash.slice(1); if (!h.includes('=')) return false;
+  const p = new URLSearchParams(h), s = p.get('s'), pk = p.get('p'), k = p.get('k');
+  if (s && pk && k) { CLOUD = {url: /^https?:/.test(s) ? s : 'https://' + s + '.supabase.co', key: pk, house: k}; try { localStorage.setItem(CLOUD_KEY, JSON.stringify(CLOUD)); } catch(e) {} }
+  history.replaceState(null, '', location.pathname + location.search + '#overview');
+  return true;
+}
+hashConfig();
+/* each Supabase house gets its own local copy, so opening another house's link never overwrites this browser's data */
+const strHash = s => { let h = 2166136261; for (const ch of s) h = Math.imul(h ^ ch.codePointAt(0), 16777619); return (h >>> 0).toString(36); };
+const keyFor = c => c ? 'house-ledger-' + strHash(c.url.replace(/\/+$/, '') + '|' + c.house) : BASE_KEY;
+const KEY = keyFor(CLOUD);
 const CATS = [
   {id:'electric', name:'ค่าไฟฟ้า', unit:'kWh'},
   {id:'water',    name:'ค่าน้ำประปา', unit:'ลบ.ม.'},
@@ -448,22 +461,12 @@ const CATS = [
 ];
 const catName = id => (CATS.find(c => c.id === id) || {name:id}).name;
 const catUnit = id => (CATS.find(c => c.id === id) || {}).unit || '';
-let DB = {expenses:[], info:{no:'92/149'}, loan:{bank:'', rate1:1.90, promo:3, spread:1.75}};
+let DB = {expenses:[], info: CLOUD ? {} : {no:'92/149'}, loan:{bank:'', rate1:1.90, promo:3, spread:1.75}};
 function load(){ try { const s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); DB = Object.assign(DB, d); } } catch(e){} }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(DB)); return true; } catch(e){ toast('บันทึกในเบราว์เซอร์ไม่ได้ ให้ดาวน์โหลดไฟล์สำรองแทน'); return false; } }
 load();
 
 /* ============================== CLOUD (Supabase via RPC) ============================== */
-const CLOUD_KEY = 'house-92-149-cloud-v1';
-let CLOUD = null; try { CLOUD = JSON.parse(localStorage.getItem(CLOUD_KEY) || 'null'); } catch(e) {}
-function hashConfig(){
-  const h = location.hash.slice(1); if (!h.includes('=')) return false;
-  const p = new URLSearchParams(h), s = p.get('s'), pk = p.get('p'), k = p.get('k');
-  if (s && pk && k) { CLOUD = {url: /^https?:/.test(s) ? s : 'https://' + s + '.supabase.co', key: pk, house: k}; try { localStorage.setItem(CLOUD_KEY, JSON.stringify(CLOUD)); } catch(e) {} }
-  history.replaceState(null, '', location.pathname + location.search + '#overview');
-  return true;
-}
-hashConfig();
 async function rpc(fn, args){
   const h = {'Content-Type': 'application/json', apikey: CLOUD.key};
   if (/^eyJ/.test(CLOUD.key)) h.Authorization = 'Bearer ' + CLOUD.key;
@@ -489,15 +492,20 @@ async function cloudPull(first){
   try {
     const g = await rpc('house_get', {p_key: CLOUD.house});
     const remote = (g.expenses || []).map(e => ({id: e.id, date: String(e.date).slice(0, 10), cat: e.cat, amount: +e.amount, units: e.units == null ? null : +e.units, part: e.part || '', note: e.note || ''}));
-    if (first && !remote.length && DB.expenses.length && !DB.cloudImported) {
-      const n = await rpc('house_import', {p_key: CLOUD.house, p_rows: DB.expenses});
-      if (!g.profile) await rpc('house_save_profile', {p_key: CLOUD.house, p_info: DB.info, p_loan: DB.loan});
-      DB.cloudImported = true; save(); toast('ย้ายข้อมูลในเครื่อง ' + n + ' รายการขึ้น Supabase แล้ว');
-      return cloudPull(false);
+    if (first && !remote.length && !g.profile) {   // brand-new house in Supabase: move this browser's data up once
+      let src = DB;
+      if (!src.expenses.length && KEY !== BASE_KEY) { try { src = JSON.parse(localStorage.getItem(BASE_KEY) || 'null'); } catch(e) { src = null; } }
+      if (src && Array.isArray(src.expenses) && src.expenses.length && !src.cloudImported) {
+        const n = await rpc('house_import', {p_key: CLOUD.house, p_rows: src.expenses});
+        await rpc('house_save_profile', {p_key: CLOUD.house, p_info: src.info || {}, p_loan: src.loan || {}});
+        src.cloudImported = true; if (src === DB) save(); else try { localStorage.setItem(BASE_KEY, JSON.stringify(src)); } catch(e) {}
+        toast('ย้ายข้อมูลในเครื่อง ' + n + ' รายการขึ้น Supabase แล้ว');
+        return cloudPull(false);
+      }
     }
     if (first && !g.profile && (DB.info.ca || DB.loan.principal)) await rpc('house_save_profile', {p_key: CLOUD.house, p_info: DB.info, p_loan: DB.loan});
     DB.expenses = remote;
-    if (g.profile) { const keep = DB.info.layout; DB.info = Object.assign({no: '92/149'}, g.profile.info); if (!Array.isArray(DB.info.layout) && keep) DB.info.layout = keep; DB.loan = Object.assign({}, g.profile.loan); }
+    if (g.profile) { const keep = DB.info.layout; DB.info = Object.assign({no: g.house_no || '92/149'}, g.profile.info); if (!Array.isArray(DB.info.layout) && keep) DB.info.layout = keep; DB.loan = Object.assign({}, g.profile.loan); }
     save(); lastPull = Date.now(); setSync('ok');
     if (document.activeElement && !document.activeElement.closest('#fLoan')) fillLoan();
     render();
@@ -514,7 +522,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && CL
 /* one-time import from the previous version of this app (same GitHub Pages origin, key sh2401-house-ledger-v1) */
 (function migrate(){
   try {
-    if (DB.expenses.length || DB.migrated) return;
+    if (KEY !== BASE_KEY || DB.expenses.length || DB.migrated) return;
     const old = JSON.parse(localStorage.getItem('sh2401-house-ledger-v1') || 'null'); if (!old) return;
     const OLD = {elec:'electric', water:'water', loan:'loan', repair:'repair', ac:'ac', net:'internet', fee:'common', other:'other'};
     const LAYER_TH = {'01':'ชั้นล่าง','02':'ชั้นบน','03':'หลังคา','04':'ส่วนต่อเติม','05':'ตกแต่งภายใน ชั้นล่าง','06':'ตกแต่งภายใน ชั้นบน','07':'ระบบไฟฟ้า','08':'ระบบประปา',
@@ -555,7 +563,7 @@ function showTab(t){
   render();
 }
 document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.t)));
-window.addEventListener('hashchange', () => { if (hashConfig()) { fillCloud(); cloudPull(true); } showTab(location.hash.slice(1)); });
+window.addEventListener('hashchange', () => { const was = KEY; if (hashConfig()) { if (keyFor(CLOUD) !== was) return location.reload(); fillCloud(); cloudPull(true); } showTab(location.hash.slice(1)); });
 
 /* ============================== EXPENSE FORM ============================== */
 $('eCat').innerHTML = CATS.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
@@ -836,9 +844,10 @@ $('fCloud').addEventListener('submit', e => {
   if (!u || !k || !h) { toast('กรอก Project URL, key และรหัสบ้านให้ครบ'); return; }
   if (!/^https?:/.test(u)) u = 'https://' + u + (u.includes('.') ? '' : '.supabase.co');
   CLOUD = {url: u, key: k, house: h}; try { localStorage.setItem(CLOUD_KEY, JSON.stringify(CLOUD)); } catch(err) {}
+  if (keyFor(CLOUD) !== KEY) { location.hash = 'info'; return location.reload(); }
   cloudPull(true);
 });
-$('cOff').addEventListener('click', () => { CLOUD = null; try { localStorage.removeItem(CLOUD_KEY); } catch(e) {} fillCloud(); setSync('local'); toast('ตัดการเชื่อมต่อแล้ว ข้อมูลล่าสุดยังอยู่ในเครื่องนี้'); });
+$('cOff').addEventListener('click', () => { CLOUD = null; try { localStorage.removeItem(CLOUD_KEY); } catch(e) {} location.hash = 'info'; location.reload(); });
 $('cLink').addEventListener('click', () => {
   if (!CLOUD) { toast('เชื่อมต่อ Supabase ก่อน'); return; }
   const ref = (CLOUD.url.match(/^https:\/\/([a-z0-9]+)\.supabase\.co\/?$/) || [])[1] || CLOUD.url;
