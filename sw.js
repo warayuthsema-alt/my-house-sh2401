@@ -1,5 +1,5 @@
 // Offline cache: app shell + 3D model + three.js modules (stale-while-revalidate)
-const CACHE = "sh2401-v2";
+const CACHE = "sh2401-v3";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icon.svg", "assets/house.glb"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
