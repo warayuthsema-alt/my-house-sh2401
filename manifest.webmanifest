@@ -1,0 +1,15 @@
+{
+  "name": "บ้านของฉัน SH2401",
+  "short_name": "บ้านของฉัน",
+  "description": "บ้าน 3D แยกชั้นและงานระบบได้ พร้อมบันทึกค่าน้ำ ค่าไฟ ค่างวด และค่าซ่อม",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#e9e6e1",
+  "theme_color": "#2b2724",
+  "lang": "th",
+  "icons": [
+    {"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"},
+    {"src": "icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable"}
+  ]
+}
