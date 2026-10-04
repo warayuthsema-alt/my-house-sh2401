@@ -183,8 +183,6 @@ g = G_(F1, "ห้องรับประทานอาหาร")
 table(g, 6.55, 3.85, 7.45, 5.45, z1f)
 for cy_ in (4.15, 4.65, 5.15):
     chair(g, 6.30, cy_, z1f, "x+"); chair(g, 7.70, cy_, z1f, "x-")
-cylinder(g, "Light_Fixture", 7.0, 4.65, 0.22, CEIL1 - 0.75, CEIL1 - 0.55, n=16)       # pendant
-tube(g, "Cable_Black", [(7.0, 4.65, CEIL1 - 0.55), (7.0, 4.65, CEIL1)], r=0.005)
 cabinet(g, 6.10, 5.75, 6.75, 6.12, z1f, 0.85, "Wood_Dark", "Counter_Top")         # sideboard
 # ---- multipurpose (ห้องอเนกประสงค์)
 g = G_(F1, "ห้องอเนกประสงค์")
@@ -235,8 +233,6 @@ box(g, "Fabric_Beige", 2.08, 3.63, RFL + 0.47, 2.12, 4.07, RFL + 0.70); box(g, "
 for (gx0, gy0, gx1, gy1) in ((2.75, 3.45, 2.79, 4.95), (1.60, 6.62, 2.70, 6.66)):   # grab rails along path to closet/bath
     box(g, "Grab_Bar", gx0, gy0, RFL + 0.85, gx1, gy1, RFL + 0.89)
 box(g, "Rug", 0.6, 3.6, RFL, 1.9, 4.4, RFL + 0.01)
-disk(G_(EL, "โคมไฟ-ห้องนอนผู้สูงอายุ"), "Light_Fixture", 1.45, 5.0, CEIL1 + 0.0)
-box(G_(EL, "ไฟทางเดินกลางคืน"), "Light_Fixture", 2.76, 4.2, RFL + 0.30, 2.79, 4.35, RFL + 0.38)
 # ---- extension: rear kitchen (bay 3) – kitchen relocated here
 g = G_(FX, "ครัวหลังบ้าน-เฟอร์นิเจอร์")
 cabinet(g, 7.00, 7.82, 11.25, 8.42, 0.40, 0.85, "Cabinet_White", "Counter_Top")   # base run along back wall
@@ -295,7 +291,12 @@ cabinet(g, 6.2, 3.95, 7.0, 4.13, z2f, 0.8, "Wood_Dark"); plant(g, 7.7, 3.85, z2f
 chair(g, 9.2, -0.6, SLAB_T, "x+", "Wood_Dark"); chair(g, 10.2, -0.6, SLAB_T, "x-", "Wood_Dark")
 table(g, 9.55, -0.85, 9.85, -0.35, SLAB_T, h=0.5, top="Wood_Dark")
 
-# ================================================================ 3. ELECTRICAL (E-01 .. E-05)
+# ================================================================ 3. ELECTRICAL (E-01 .. E-05): service, LP, 13 circuits, switches, outlets
+MATS.update({
+    "Wire_Light": (0.98, 0.80, 0.10, 1.0), "Wire_Outlet": (0.86, 0.22, 0.18, 1.0), "Wire_AC": (0.20, 0.48, 0.92, 1.0),
+    "Wire_Special": (0.62, 0.32, 0.82, 1.0), "Wire_Outdoor": (0.10, 0.66, 0.56, 1.0),
+    "Switch_Plate": (0.97, 0.97, 0.96, 1.0), "Lamp_Housing": (0.93, 0.93, 0.92, 1.0),
+})
 e = lambda n: G_(EL, n)
 # meter pole outside front-left lot corner (E-02: J / SB at lot edge), service drop (E-01 overhead), U/G CV in HDPE
 PX, PY = -0.55, -4.75
@@ -305,30 +306,139 @@ box(e("เสาไฟฟ้า-มิเตอร์"), "Panel_Grey", PX + 0.25
 box(e("เสาไฟฟ้า-มิเตอร์"), "Manhole", PX - 0.8, PY - 0.05, 7.6, PX + 0.8, PY + 0.05, 7.7)          # cross arm
 tube(e("สายไฟเมนใต้ดิน CV in HDPE"), "Conduit_Power",
      [(PX, PY + 0.25, 1.4), (PX, PY + 0.25, -0.45), (0.05, PY + 0.25, -0.45), (0.05, -0.1, -0.45),
-      (0.05, -0.1, -0.45), (5.80, 0.30, -0.45), (5.80, 0.30, 1.40)], r=0.035)
+      (5.80, 0.30, -0.45), (5.80, 0.30, 1.40)], r=0.035)
 box(e("ตู้ LP (ตู้ไฟหลัก) ชานพักบันได"), "Panel_Grey", 5.96, 0.20, 1.35, 6.06, 0.75, 1.95)
 tube(e("สายเมนอากาศ IEC01 (Overhead)"), "Cable_Black", sag((PX, PY, 7.5), (2.84, -0.82, 3.30), 0.7), r=0.008)
 cylinder(e("หลักดิน Ground Rod"), "Metal_Steel", 12.55, 6.48, 0.02, -2.4, 0.15, n=8)
 box(e("หลักดิน Ground Rod"), "Manhole", 12.40, 6.33, 0.0, 12.70, 6.63, 0.05)
 tube(e("หลักดิน Ground Rod"), "Cable_Black", [(12.55, 6.48, -0.2), (11.45, 6.1, -0.2), (11.45, 6.1, 0.8)], r=0.006)
-# ceiling lights (E-02 ground, E-03 upper) – positions read from drawings
-LT1 = [(3.66, 5.64), (4.42, 5.64), (5.18, 5.64),                 # closet (ex-kitchen) row
-       (6.84, 4.67), (8.61, 4.67), (10.40, 4.67),                # dining / multipurpose
-       (8.61, 2.80), (10.40, 2.80), (8.61, 0.95), (10.40, 0.95), # living
-       (1.66, 1.54), (4.40, 1.54),                               # carport
-       (3.90, 3.90), (7.50, 2.10)]                               # bath-3, storage
-for (lx, ly) in LT1:
-    disk(e("โคมไฟเพดาน ชั้นล่าง"), "Light_Fixture", lx, ly, CEIL1)
-disk(e("โคมไฟเพดาน ชั้นล่าง"), "Light_Fixture", 9.6, -0.3, SLAB_B - 0.45)       # terrace (under beam level)
-LT2 = [(4.40, 5.66), (4.40, 4.15), (6.90, 5.20), (7.31, 3.56), (9.03, 5.90), (10.55, 5.50),
-       (8.99, 2.70), (10.51, 2.70), (8.99, 0.95), (10.51, 0.95), (4.40, 2.30), (4.40, 0.80)]
-for (lx, ly) in LT2:
-    disk(e("โคมไฟเพดาน ชั้นบน"), "Light_Fixture", lx, ly, CEIL2)
-box(e("โคมไฟผนัง"), "Light_Fixture", 8.20, -0.10, 5.2, 8.34, -0.06, 5.45)        # balcony wall light
-box(e("โคมไฟผนัง"), "Light_Fixture", 5.96, 1.0, 2.9, 6.00, 1.15, 3.1)           # stair wall light
-# special outlets (E-04): pump P, washing machine, EV charger (above), auto gate J
+
+ZC1, ZC2 = CEIL1 + 0.05, CEIL2 + 0.05     # ceiling voids where circuits run (ground / upper)
+LPX = 6.08
+GFz, UFz = GF_FFL, SLAB_T
+def lane(k, upper=False):
+    """Home run of circuit k: out of the LP top, up the wall to the ceiling void (through the slab for upper floor)."""
+    y, z = 0.24 + 0.04 * k, (ZC2 if upper else ZC1)
+    return [(LPX, y, 1.95), (LPX, y, z), (LPX + 0.10 + 0.03 * k, y, z)]
+def circuit(name, mat, k, targets, upper=False, r=0.011):
+    """Manhattan routing in the ceiling void from the circuit trunk to each target, then a drop to the device."""
+    g = e(name); h = lane(k, upper); tube(g, mat, h, r=r * 1.3, n=8)
+    tx0, ty0, z = h[-1]
+    for (tx, ty, tz) in targets:
+        tube(g, mat, [(tx0, ty0, z), (tx0, ty, z), (tx, ty, z), (tx, ty, tz)], r=r, n=8)
+def plate(group, x, y, z, axis, w=0.08, hgt=0.12, mat="Switch_Plate"):
+    if axis == "x": box(group, mat, x - w / 2, y - 0.008, z - hgt / 2, x + w / 2, y + 0.008, z + hgt / 2)
+    else:           box(group, mat, x - 0.008, y - w / 2, z - hgt / 2, x + 0.008, y + w / 2, z + hgt / 2)
+
+# ---- lamp positions per room (also used by layer 13)
+LAMPS_G = {
+    "ดวงโคม Walk-in Closet": [(3.66, 5.64, CEIL1), (4.42, 5.64, CEIL1), (5.18, 5.64, CEIL1)],
+    "ดวงโคม ห้องรับประทานอาหาร": [(6.84, 4.67, CEIL1)],
+    "ดวงโคม ห้องอเนกประสงค์": [(8.61, 4.67, CEIL1), (10.40, 4.67, CEIL1)],
+    "ดวงโคม ห้องรับแขก": [(8.61, 2.80, CEIL1), (10.40, 2.80, CEIL1), (8.61, 0.95, CEIL1), (10.40, 0.95, CEIL1)],
+    "ดวงโคม โรงจอดรถ": [(1.66, 1.54, CEIL1), (4.40, 1.54, CEIL1)],
+    "ดวงโคม ห้องน้ำ-3": [(3.90, 3.90, CEIL1)],
+    "ดวงโคม ห้องเก็บของใต้บันได": [(7.50, 2.10, 2.30)],
+}
+LAMPS_U = {
+    "ดวงโคม ห้องนอน-1 (ชั้นบน)": [(8.99, 2.70, CEIL2), (10.51, 2.70, CEIL2), (8.99, 0.95, CEIL2), (10.51, 0.95, CEIL2)],
+    "ดวงโคม ห้องนอน-2 (ชั้นบน)": [(4.40, 2.30, CEIL2), (4.40, 0.80, CEIL2)],
+    "ดวงโคม ห้องนอน-3 (ชั้นบน)": [(4.40, 5.66, CEIL2), (4.40, 4.15, CEIL2)],
+    "ดวงโคม ห้องน้ำ-1 (ชั้นบน)": [(10.55, 5.50, CEIL2)],
+    "ดวงโคม ห้องน้ำ-2 (ชั้นบน)": [(6.90, 5.20, CEIL2)],
+    "ดวงโคม ห้องแต่งตัว (ชั้นบน)": [(9.03, 5.90, CEIL2)],
+    "ดวงโคม โถงบันได (ชั้นบน)": [(7.31, 3.56, CEIL2)],
+}
+LAMPS_X = {
+    "ดวงโคม ห้องนอนผู้สูงอายุ": [(1.45, 5.0, CEIL1)],
+    "ดวงโคม ครัวหลังบ้าน": [(8.4, 7.3, 2.86), (10.2, 7.3, 2.86)],
+    "ดวงโคม ห้องเตรียม-ซักรีด": [(4.8, 7.6, 2.86)],
+    "ดวงโคม ลานซักล้าง": [(1.2, 7.6, 2.80)],
+}
+flat = lambda d: [p for v in d.values() for p in v]
+
+# ---- C1/C2 lighting + switches
+SW_G = [(8.09, 2.95, GFz + 1.2, "y"), (6.01, 3.40, GFz + 1.2, "y"), (5.89, 4.90, GFz + 1.2, "y"), (6.01, 4.15, GFz + 1.2, "y"),
+        (7.00, 3.18, GFz + 1.2, "x"), (5.60, 2.89, CAR_FFL + 1.2, "x")]
+SW_U = [(8.09, 3.15, UFz + 1.2, "y"), (5.82, 1.95, UFz + 1.2, "y"), (5.82, 4.05, UFz + 1.2, "y"), (6.50, 4.14, UFz + 1.2, "x"),
+        (9.53, 4.45, UFz + 1.2, "y"), (6.02, 3.00, UFz + 1.2, "y"), (8.40, 0.08, UFz + 1.2, "x")]
+circuit("วงจร C1 แสงสว่าง ชั้นล่าง", "Wire_Light", 0, flat(LAMPS_G) + [(5.98, 1.07, 3.10)] + [(x, y, z + 0.06) for x, y, z, _ in SW_G])
+circuit("วงจร C2 แสงสว่าง ชั้นบน", "Wire_Light", 1, flat(LAMPS_U) + [(x, y, z + 0.06) for x, y, z, _ in SW_U], upper=True)
+for x, y, z, ax in SW_G: plate(e("สวิตช์ไฟ ชั้นล่าง"), x, y, z, ax)
+for x, y, z, ax in SW_U: plate(e("สวิตช์ไฟ ชั้นบน"), x, y, z, ax)
+# ---- C3/C4 general outlets
+OUT_G = [(8.09, 0.60, "y"), (11.25, 1.50, "y"), (8.09, 2.20, "y"), (6.01, 5.90, "y"), (11.25, 4.50, "y"), (10.00, 6.10, "x"), (3.01, 5.50, "y")]
+OUT_U = [(11.25, 1.00, "y"), (8.09, 1.80, "y"), (11.25, 2.90, "y"), (2.99, -0.10, "y"), (2.99, 1.85, "y"), (3.45, 3.18, "x"), (5.25, 3.18, "x"), (4.45, 6.67, "x")]
+circuit("วงจร C3 เต้ารับ ชั้นล่าง", "Wire_Outlet", 2, [(x, y, GFz + 0.36) for x, y, _ in OUT_G])
+circuit("วงจร C4 เต้ารับ ชั้นบน", "Wire_Outlet", 3, [(x, y, UFz + 0.36) for x, y, _ in OUT_U], upper=True)
+for x, y, ax in OUT_G: plate(e("เต้ารับ ชั้นล่าง"), x, y, GFz + 0.3, ax, w=0.12, hgt=0.08)
+for x, y, ax in OUT_U: plate(e("เต้ารับ ชั้นบน"), x, y, UFz + 0.3, ax, w=0.12, hgt=0.08)
+# ---- C5..C8 air-conditioners (one breaker each, home run to the FCU)
+circuit("วงจร C5 แอร์ ห้องอเนกประสงค์", "Wire_AC", 4, [(9.75, 6.00, CEIL1 - 0.10)])
+circuit("วงจร C6 แอร์ ห้องนอน-1 (ชั้นบน)", "Wire_AC", 5, [(9.75, 0.20, CEIL2 - 0.10)], upper=True)
+circuit("วงจร C7 แอร์ ห้องนอน-2 (ชั้นบน)", "Wire_AC", 6, [(4.25, -0.55, CEIL2 - 0.10)], upper=True)
+circuit("วงจร C8 แอร์ ห้องนอน-3 (ชั้นบน)", "Wire_AC", 7, [(4.45, 6.55, CEIL2 - 0.10)], upper=True)
+# ---- C9 water heaters (3 bathrooms)
+HT = [(3.03, 3.85, GFz + 1.6, "y", False), (10.50, 6.11, UFz + 1.6, "x", True), (5.99, 5.60, UFz + 1.6, "y", True)]
+circuit("วงจร C9 เครื่องทำน้ำอุ่น", "Wire_Special", 8, [(x, y, z + 0.2) for x, y, z, _, u in HT if not u])
+circuit("วงจร C9 เครื่องทำน้ำอุ่น", "Wire_Special", 8, [(x, y, z + 0.2) for x, y, z, _, u in HT if u], upper=True)
+for x, y, z, ax, _ in HT: plate(e("เครื่องทำน้ำอุ่น"), x, y, z, ax, w=0.22, hgt=0.36, mat="AC_White")
+# ---- C10 pump + washing machine (laundry yard)
+g = e("วงจร C10 ปั๊มน้ำ-เครื่องซักผ้า"); h = lane(9); tube(g, "Wire_Special", h, r=0.014, n=8)
+tube(g, "Wire_Special", [h[-1], (h[-1][0], 6.60, ZC1), (2.69, 6.60, ZC1), (2.69, 6.90, 2.80), (2.69, 6.97, 1.32)], r=0.011, n=8)
+tube(g, "Wire_Special", [(2.69, 6.90, 2.80), (0.11, 6.90, 2.80), (0.11, 6.97, 1.32)], r=0.011, n=8)
 for (ox, oy, oz) in ((0.11, 6.97, 1.2), (2.69, 6.97, 1.2), (-0.1, -4.25, 1.0)):
     box(e("เต้ารับพิเศษ (ปั๊มน้ำ/เครื่องซักผ้า/ประตูรีโมท)"), "Panel_Grey", ox - 0.06, oy - 0.04, oz, ox + 0.06, oy + 0.04, oz + 0.12)
+# ---- C11 EV charger
+g = e("วงจร C11 EV Charger"); h = lane(10); tube(g, "Wire_Special", h, r=0.016, n=8)
+tube(g, "Wire_Special", [h[-1], (h[-1][0], 2.85, ZC1), (4.46, 2.85, ZC1), (4.46, 2.90, 1.45)], r=0.014, n=8)
+# ---- C12 extension: elderly bedroom, rear kitchen, pantry, laundry yard
+g = e("วงจร C12 ส่วนต่อเติม"); h = lane(11); tube(g, "Wire_Light", h, r=0.014, n=8); x12 = h[-1][0]
+tube(g, "Wire_Light", [h[-1], (x12, 4.40, ZC1), (1.45, 4.40, ZC1), (1.45, 5.00, ZC1), (1.45, 5.00, CEIL1)], r=0.011, n=8)
+tube(g, "Wire_Light", [(1.45, 4.40, ZC1), (2.82, 4.40, ZC1), (2.82, 4.90, ZC1), (2.82, 4.90, RFL + 1.26)], r=0.011, n=8)       # switch
+tube(g, "Wire_Light", [(2.77, 4.40, ZC1), (2.77, 4.27, RFL + 0.40)], r=0.011, n=8)                                          # night light
+tube(g, "Wire_Outlet", [(1.45, 4.40, ZC1), (1.75, 4.40, ZC1), (1.75, 6.62, ZC1), (1.75, 6.62, RFL + 0.36)], r=0.011, n=8)
+tube(g, "Wire_Outlet", [(0.6, 4.40, ZC1), (0.13, 4.40, ZC1), (0.13, 3.90, ZC1), (0.13, 3.90, RFL + 0.36)], r=0.011, n=8)
+tube(g, "Wire_Light", [h[-1], (x12, 5.98, ZC1), (8.4, 5.98, ZC1), (8.4, 6.35, 2.86), (8.4, 7.3, 2.86)], r=0.011, n=8)
+tube(g, "Wire_Light", [(8.4, 6.35, 2.86), (10.2, 6.35, 2.86), (10.2, 7.3, 2.86)], r=0.011, n=8)
+tube(g, "Wire_Outlet", [(8.4, 6.35, 2.86), (7.6, 6.35, 2.86), (7.6, 8.36, 2.86), (7.6, 8.36, 1.35)], r=0.011, n=8)
+tube(g, "Wire_Outlet", [(10.2, 6.35, 2.86), (10.8, 6.35, 2.86), (10.8, 8.36, 2.86), (10.8, 8.36, 1.35)], r=0.011, n=8)
+tube(g, "Wire_Light", [h[-1], (x12, 6.55, ZC1), (4.8, 6.55, ZC1), (4.8, 6.90, 2.86), (4.8, 7.6, 2.86)], r=0.011, n=8)
+tube(g, "Wire_Light", [(4.8, 6.90, 2.86), (1.2, 6.90, 2.86), (1.2, 7.6, 2.80)], r=0.011, n=8)
+plate(e("สวิตช์ไฟ ส่วนต่อเติม"), 2.82, 4.90, RFL + 1.2, "y")
+for x, y, z, ax in ((1.75, 6.62, RFL + 0.3, "x"), (0.13, 3.90, RFL + 0.3, "y"), (7.6, 8.36, 1.29, "x"), (10.8, 8.36, 1.29, "x")):
+    plate(e("เต้ารับ ส่วนต่อเติม"), x, y, z, ax, w=0.12, hgt=0.08)
+# ---- C13 outdoor lighting: terrace, balcony, gate lantern (underground to the mailbox pillar)
+g = e("วงจร C13 ไฟภายนอก"); h = lane(12); tube(g, "Wire_Outdoor", h, r=0.014, n=8); x13 = h[-1][0]
+tube(g, "Wire_Outdoor", [h[-1], (x13, -0.30, ZC1), (9.6, -0.30, ZC1), (9.6, -0.30, SLAB_B)], r=0.011, n=8)
+hu = lane(12, upper=True); tube(g, "Wire_Outdoor", hu + [(hu[-1][0], -0.02, ZC2), (8.27, -0.02, ZC2), (8.27, -0.02, 5.45)], r=0.011, n=8)
+tube(g, "Wire_Outdoor", [(LPX, 0.72, 1.35), (LPX, 0.72, -0.40), (6.75, 0.72, -0.40), (6.75, -4.32, -0.40), (6.75, -4.32, 1.40)], r=0.014, n=8)
+
+# ================================================================ 13. LAMPS (ดวงโคม-หลอดไฟ) – one object per room, separate from wiring
+LM = "13 ดวงโคม-หลอดไฟ"
+def downlight(group, x, y, zc):
+    cylinder(group, "Lamp_Housing", x, y, 0.085, zc - 0.014, zc, n=16)
+    cylinder(group, "Light_Fixture", x, y, 0.064, zc - 0.019, zc - 0.014, n=16)
+for d in (LAMPS_G, LAMPS_U, LAMPS_X):
+    for name, pts in d.items():
+        for (x, y, z) in pts: downlight(G_(LM, name), x, y, z)
+g = G_(LM, "โคมไฟห้อย โต๊ะอาหาร")
+tube(g, "Cable_Black", [(7.0, 4.65, CEIL1 - 0.62), (7.0, 4.65, CEIL1)], r=0.005, n=6)
+cylinder(g, "Wood_Dark", 7.0, 4.65, 0.22, CEIL1 - 0.78, CEIL1 - 0.62, n=24)
+cylinder(g, "Light_Fixture", 7.0, 4.65, 0.17, CEIL1 - 0.80, CEIL1 - 0.78, n=24)
+g = G_(LM, "ดวงโคม ห้องนอนผู้สูงอายุ")
+box(g, "Lamp_Housing", 2.76, 4.18, RFL + 0.30, 2.80, 4.36, RFL + 0.40)                                     # night light (path to door)
+box(g, "Light_Fixture", 2.755, 4.20, RFL + 0.32, 2.76, 4.34, RFL + 0.38)
+g = G_(LM, "ดวงโคม บันได")
+box(g, "Lamp_Housing", 5.96, 1.00, 2.90, 6.00, 1.15, 3.10); box(g, "Light_Fixture", 6.00, 1.02, 2.92, 6.01, 1.13, 3.08)
+g = G_(LM, "ไฟภายนอก เฉลียง")
+downlight(g, 9.6, -0.30, SLAB_B)
+g = G_(LM, "ไฟภายนอก ระเบียง (ชั้นบน)")
+box(g, "Lamp_Housing", 8.20, -0.14, 5.20, 8.34, -0.08, 5.45); box(g, "Light_Fixture", 8.22, -0.15, 5.23, 8.32, -0.14, 5.42)
+g = G_(LM, "ไฟภายนอก ประตูรั้ว")
+box(g, "Lamp_Housing", 6.65, -4.43, 1.40, 6.85, -4.23, 1.43)
+box(g, "Light_Fixture", 6.68, -4.40, 1.43, 6.82, -4.26, 1.60)
+box(g, "Rail_Black", 6.63, -4.45, 1.60, 6.87, -4.21, 1.63)
 
 # ================================================================ 4. TELECOM (E-01, E-04, E-05)
 t = lambda n: G_(TC, n)
