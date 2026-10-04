@@ -1,0 +1,71 @@
+name: Build 3D model & deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: System libraries for Blender (bpy)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-6 libxrender1 libxxf86vm1 libxfixes3 libxi6 libxkbcommon0 libsm6 libgl1 libegl1
+
+      - name: Install Blender as a Python module
+        run: pip install bpy==5.0.1
+
+      - name: Build the house model (source/*.py -> GLB)
+        env:
+          HOUSE_DIR: source
+          OUT_DIR: /tmp/out
+          BLEND_OUT: ""
+          GLB_OUT: /tmp/out/house_raw.glb
+        run: |
+          mkdir -p /tmp/out
+          python source/make_blend.py NORENDER
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Compress model (meshopt)
+        run: npx --yes @gltf-transform/cli@4 meshopt /tmp/out/house_raw.glb /tmp/out/house.glb --level medium
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site/assets
+          cp index.html manifest.webmanifest sw.js icon.svg icon-maskable.svg .nojekyll _site/
+          cp /tmp/out/house.glb _site/assets/house.glb
+          ls -la _site _site/assets
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
