@@ -169,127 +169,36 @@ def wardrobe(group, x0, y0, x1, y1, z, h=2.3):
             box(group, "Wood_Dark", x0 - 0.003, yy - 0.006, z + 0.05, x1 + 0.003, yy + 0.006, z + h - 0.05)
 
 z1f, z2f = GF_FFL, SLAB_T
-# ---- ground: living room (ห้องรับแขก)
-g = G_(F1, "ห้องรับแขก")
-box(g, "Rug", 8.9, 0.55, z1f, 10.9, 2.55, z1f + 0.01)
-sofa(g, 10.35, 0.40, 11.20, 2.70, z1f, "x1")
-sofa(g, 9.20, 0.30, 10.35, 0.95, z1f, "y0")                      # L-return
-table(g, 9.35, 1.20, 10.0, 2.15, z1f, h=0.40, top="Wood_Dark")
-cabinet(g, 8.10, 0.90, 8.50, 2.50, z1f, 0.45, "Wood_Dark")
-tv(g, "y", 8.09, 1.0, 2.40, z1f + 0.95, z1f + 1.75, 1)
-plant(g, 8.35, 2.80, z1f); plant(g, 11.05, 0.20, z1f, 1.4)
-# ---- dining (ห้องรับประทานอาหาร)
-g = G_(F1, "ห้องรับประทานอาหาร")
-table(g, 6.55, 3.85, 7.45, 5.45, z1f)
-for cy_ in (4.15, 4.65, 5.15):
-    chair(g, 6.30, cy_, z1f, "x+"); chair(g, 7.70, cy_, z1f, "x-")
-cabinet(g, 6.10, 5.75, 6.75, 6.12, z1f, 0.85, "Wood_Dark", "Counter_Top")         # sideboard
-# ---- multipurpose (ห้องอเนกประสงค์)
-g = G_(F1, "ห้องอเนกประสงค์")
-box(g, "Rug", 9.4, 3.7, z1f, 10.9, 5.2, z1f + 0.01)
-sofa(g, 9.6, 3.9, 10.4, 4.7, z1f, "x1"); sofa(g, 9.6, 4.75, 10.4, 5.55, z1f, "x1")
-table(g, 8.9, 4.3, 9.4, 5.0, z1f, h=0.45, top="Wood_Dark")
-cabinet(g, 10.95, 5.35, 11.28, 6.10, z1f, 1.8, "Wood_Light")
-plant(g, 8.35, 5.95, z1f, 1.3)
-# ---- walk-in closet (เดิม: ห้องครัว)
-g = G_(F1, "Walk-in Closet (เดิมห้องครัว)")
-wardrobe(g, 3.00, 6.10, 5.85, 6.68, z1f)                     # back wall
-wardrobe(g, 3.00, 4.78, 5.20, 5.30, z1f)                     # against bath-3 wall
-wardrobe(g, 5.30, 6.10, 5.88, 4.80 + 0.0, z1f) if False else None
-cabinet(g, 3.80, 5.55, 4.90, 5.95, z1f, 0.85, "Wood_Dark", "Counter_Top")    # island dresser
-box(g, "Metal_Steel", 5.86, 4.82, z1f + 0.3, 5.89, 5.0, z1f + 2.0)           # full-length mirror
-chair(g, 5.4, 5.5, z1f, "x-", "Fabric_Beige")
-# ---- bath-3 (ห้องน้ำ 3)
-g = G_(F1, "ห้องน้ำ-3")
+# Movable furniture is no longer part of the model: the web app places it (catalog + drag).
+# Only built-in fixtures stay here.
+# ---- bathrooms (sanitary ware)
+g = G_(L1, "สุขภัณฑ์ ห้องน้ำ-3")
 toilet(g, 4.26, 3.10, 0.56, "y0")
 basin(g, 4.85, 3.08, 5.45, 3.55, 0.56)
 shower(g, 3.0, 3.08, 3.75, 4.62, 0.56, "x", 3.75)
-# ---- storage under stair
-g = G_(F1, "ห้องเก็บของใต้บันได")
-for zz in (0.9, 1.4, 1.9):
-    box(g, "Wood_Light", 7.65, 1.15, zz, 7.98, 3.05, zz + 0.03)
-# ---- carport: car + EV charger
-g = G_(F1, "โรงจอดรถ-รถยนต์")
-cx0, cy0 = 3.15, -1.55
-box(g, "Car_Paint", cx0, cy0 + 0.05, 0.35 + CAR_FFL - 0.30, cx0 + 1.8, cy0 + 4.55, 0.95 + CAR_FFL - 0.30)
-box(g, "Glass", cx0 + 0.12, cy0 + 1.25, 0.95, cx0 + 1.68, cy0 + 3.6, 1.45)
-box(g, "Car_Paint", cx0 + 0.15, cy0 + 1.45, 1.40, cx0 + 1.65, cy0 + 3.40, 1.48)
-for (wx, wy) in ((cx0 - 0.02, cy0 + 0.85), (cx0 + 1.62, cy0 + 0.85), (cx0 - 0.02, cy0 + 3.65), (cx0 + 1.62, cy0 + 3.65)):
-    tube(g, "Tyre_Black", [(wx, wy, 0.33 + 0.02), (wx + 0.20, wy, 0.33 + 0.02)], r=0.33, n=14)
+g = G_(L2, "สุขภัณฑ์ ห้องน้ำ-1 (ชั้นบน)")
+toilet(g, 10.80, 3.62, z2f - 0.04, "y0")
+basin(g, 10.78, 4.55, 11.28, 5.25, z2f - 0.04)
+shower(g, 9.66, 5.35, 11.28, 6.13, z2f - 0.04, "y", 5.35)
+g = G_(L2, "สุขภัณฑ์ ห้องน้ำ-2 (ชั้นบน)")
+toilet(g, 6.42, 4.26, z2f - 0.04, "y0")
+basin(g, 7.15, 5.65, 7.95, 6.13, z2f - 0.04)
+shower(g, 5.97, 5.10, 7.00, 6.13, z2f - 0.04, "y", 5.10)
+# ---- EV charger in the carport (car removed)
 box(G_(EL, "EV Charger"), "Panel_Grey", 4.30, 2.93, 1.0, 4.62, 2.98, 1.45)
-# ---- terrace
-g = G_(F1, "เฉลียงหน้าบ้าน")
-chair(g, 9.6, -0.6, TER_FFL, "x+", "Wood_Dark"); chair(g, 10.6, -0.6, TER_FFL, "x-", "Wood_Dark")
-table(g, 9.95, -0.85, 10.25, -0.35, TER_FFL, h=0.5, top="Wood_Dark")
-plant(g, 6.45, -0.9, TER_FFL, 1.2)
-
-# ---- extension: elderly bedroom (ห้องนอนผู้สูงอายุ) in carport room
-g = G_(FX, "ห้องนอนผู้สูงอายุ-เฟอร์นิเจอร์")
-bed(g, 0.35, 4.55, 1.55, 6.62, "y1", RFL)                       # 3.5-ft bed, low height
-cabinet(g, 1.62, 6.20, 2.05, 6.62, RFL, 0.55, "Wood_Light")      # bedside
-cabinet(g, 0.15, 3.40, 0.55, 4.40, RFL, 0.75, "Wood_Light")      # low cabinet
-chair(g, 2.30, 3.85, RFL, "y+", "Fabric_Beige")                  # armchair
-box(g, "Fabric_Beige", 2.08, 3.63, RFL + 0.47, 2.12, 4.07, RFL + 0.70); box(g, "Fabric_Beige", 2.48, 3.63, RFL + 0.47, 2.52, 4.07, RFL + 0.70)
-for (gx0, gy0, gx1, gy1) in ((2.75, 3.45, 2.79, 4.95), (1.60, 6.62, 2.70, 6.66)):   # grab rails along path to closet/bath
+# ---- extension built-ins: grab rails (elderly room), rear-kitchen counter run, laundry wash tub
+g = G_(FX, "ราวจับ ห้องผู้สูงอายุ")
+for (gx0, gy0, gx1, gy1) in ((2.75, 3.45, 2.79, 4.95), (1.60, 6.62, 2.70, 6.66)):
     box(g, "Grab_Bar", gx0, gy0, RFL + 0.85, gx1, gy1, RFL + 0.89)
-box(g, "Rug", 0.6, 3.6, RFL, 1.9, 4.4, RFL + 0.01)
-# ---- extension: rear kitchen (bay 3) – kitchen relocated here
-g = G_(FX, "ครัวหลังบ้าน-เฟอร์นิเจอร์")
+g = G_(FX, "ครัวหลังบ้าน-เคาน์เตอร์ built-in")
 cabinet(g, 7.00, 7.82, 11.25, 8.42, 0.40, 0.85, "Cabinet_White", "Counter_Top")   # base run along back wall
 box(g, "Metal_Steel", 8.10, 7.92, 1.26, 8.80, 8.32, 1.30)                     # sink
 box(g, "TV_Black", 9.60, 7.92, 1.26, 10.30, 8.32, 1.28)                       # hob
 box(g, "Metal_Steel", 9.65, 8.05, 2.00, 10.25, 8.42, 2.40)                    # hood
 cabinet(g, 7.00, 8.08, 9.40, 8.42, 2.00, 0.70, "Cabinet_White")              # wall cabinets
-box(g, "Metal_Steel", 6.90, 6.30, 0.40, 7.60, 6.95, 2.20)                     # fridge
-table(g, 8.6, 6.6, 9.8, 7.3, 0.40, h=0.9, top="Counter_Top", leg="Cabinet_White")   # breakfast bar
-# ---- extension: rear room (bay 2) – pantry / laundry room
-g = G_(FX, "ห้องเตรียม-ซักรีด-เฟอร์นิเจอร์")
-for zz in (0.9, 1.4, 1.9):
-    box(g, "Wood_Light", 3.0, 8.05, zz, 6.7, 8.42, zz + 0.03)
-table(g, 4.2, 7.1, 5.6, 7.6, 0.40, h=0.85, top="Wood_Light")
-# ---- laundry yard (bay 1)
-g = G_(FX, "ลานซักล้าง-เครื่องซักผ้า")
-box(g, "Ceramic_White", 1.95, 6.95, CAR_FFL, 2.55, 7.55, CAR_FFL + 0.85)
-box(g, "Ceramic_White", 1.30, 6.95, CAR_FFL, 1.90, 7.55, CAR_FFL + 0.85)
+g = G_(FX, "ลานซักล้าง-อ่างซักล้าง")
 box(g, "Metal_Steel", 0.95, 8.05, CAR_FFL, 2.65, 8.40, CAR_FFL + 0.85)        # wash tub counter
 
-# ---- upper: bedroom 1 (master)
-g = G_(F2, "ห้องนอน-1")
-bed(g, 9.25, 0.95, 11.25, 2.75, "x1", z2f)
-cabinet(g, 10.75, 0.45, 11.25, 0.90, z2f, 0.5, "Wood_Dark"); cabinet(g, 10.75, 2.80, 11.25, 3.25, z2f, 0.5, "Wood_Dark")
-box(g, "Rug", 8.6, 0.6, z2f, 9.25, 3.1, z2f + 0.01)
-cabinet(g, 8.10, 1.0, 8.50, 2.6, z2f, 0.5, "Wood_Dark")
-tv(g, "y", 8.09, 1.1, 2.5, z2f + 0.95, z2f + 1.75, 1)
-g = G_(F2, "ห้องแต่งตัว")
-wardrobe(g, 8.10, 4.28, 8.70, 6.12, z2f)
-wardrobe(g, 8.75, 5.55, 9.52, 6.12, z2f)
-cabinet(g, 9.0, 3.9, 9.5, 4.6, z2f, 0.75, "Wood_Dark", "Counter_Top")
-g = G_(F2, "ห้องน้ำ-1")
-toilet(g, 10.80, 3.62, z2f - 0.04, "y0")
-basin(g, 10.78, 4.55, 11.28, 5.25, z2f - 0.04)
-shower(g, 9.66, 5.35, 11.28, 6.13, z2f - 0.04, "y", 5.35)
-# ---- bedroom 2
-g = G_(F2, "ห้องนอน-2")
-bed(g, 3.02, 0.10, 5.02, 1.75, "x0", z2f)
-cabinet(g, 3.02, -0.40, 3.45, -0.02, z2f, 0.5, "Wood_Dark")
-wardrobe(g, 3.02, 2.48, 4.90, 3.05, z2f)
-plant(g, 5.55, -0.45, z2f, 1.2)
-# ---- bedroom 3
-g = G_(F2, "ห้องนอน-3")
-bed(g, 3.55, 3.22, 5.15, 5.22, "y0", z2f)
-wardrobe(g, 3.02, 5.35, 3.60, 6.65, z2f)
-table(g, 3.80, 6.10, 5.10, 6.65, z2f, top="Wood_Light")
-chair(g, 4.45, 5.80, z2f, "y+", "Fabric_Grey")
-# ---- bath-2
-g = G_(F2, "ห้องน้ำ-2")
-toilet(g, 6.42, 4.26, z2f - 0.04, "y0")
-basin(g, 7.15, 5.65, 7.95, 6.13, z2f - 0.04)
-shower(g, 5.97, 5.10, 7.00, 6.13, z2f - 0.04, "y", 5.10)
-# ---- hall + balcony
-g = G_(F2, "โถงบันได-ระเบียง")
-cabinet(g, 6.2, 3.95, 7.0, 4.13, z2f, 0.8, "Wood_Dark"); plant(g, 7.7, 3.85, z2f, 1.0)
-chair(g, 9.2, -0.6, SLAB_T, "x+", "Wood_Dark"); chair(g, 10.2, -0.6, SLAB_T, "x-", "Wood_Dark")
-table(g, 9.55, -0.85, 9.85, -0.35, SLAB_T, h=0.5, top="Wood_Dark")
 
 # ================================================================ 3. ELECTRICAL (E-01 .. E-05): service, LP, 13 circuits, switches, outlets
 MATS.update({
