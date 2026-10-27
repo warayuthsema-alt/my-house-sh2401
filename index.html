@@ -159,6 +159,7 @@ dl.spec dd{font-family:var(--f-body);font-size:13px}
       <label class="chip"><input type="checkbox" id="g-ext" data-g="ext" checked>ส่วนต่อเติม</label>
       <label class="chip"><input type="checkbox" id="g-extroof" data-g="extroof" checked>หลังคาต่อเติม</label>
       <label class="chip"><input type="checkbox" id="g-int" data-g="int" checked>เฟอร์นิเจอร์</label>
+      <label class="chip"><input type="checkbox" id="g-fin" data-g="fin" checked>ม่าน/พื้น SPC</label>
       <label class="chip"><input type="checkbox" id="g-site" data-g="site" checked>รั้ว/สนาม</label>
       <label class="chip"><input type="checkbox" id="g-water" data-g="water"><span class="dot" style="background:#2666cc"></span>ประปา</label>
       <label class="chip"><input type="checkbox" id="g-drain" data-g="drain"><span class="dot" style="background:#737378"></span>น้ำเสีย/ระบายน้ำ</label>
@@ -333,6 +334,16 @@ dl.spec dd{font-family:var(--f-body);font-size:13px}
             <button class="btn ghost" type="button" id="fClear" style="color:var(--bad)">นำออกทั้งหมด</button>
           </div>
           <div class="list" id="placed"></div>
+        </div>
+        <div class="sec">
+          <h2>ม่านและพื้น (เฉพาะบ้านหลังนี้)</h2>
+          <div class="f2">
+            <label class="fl">พื้น<select id="finSpc"></select></label>
+            <label class="fl">ม่าน (แบบหลัก)<select id="finCur"></select></label>
+          </div>
+          <label class="fl">สีม่าน / มู่ลี่<select id="finCol"></select></label>
+          <p class="note">พื้น SPC ปูทั้งบ้าน ยกเว้นห้องน้ำและห้องซักล้าง เลือกม่านแยกรายห้องได้ด้านล่าง</p>
+          <div class="list" id="finRooms"></div>
         </div>
         <div class="sec">
           <h2>วางที่</h2>
@@ -712,7 +723,7 @@ function render(){
   if (!$('p-info').hidden) fillInfo();
   $('hName').textContent = 'บ้าน ' + (DB.info.no || '92/149');
   document.title = 'บ้าน ' + (DB.info.no || '92/149');
-  updatePick(); furnSync();
+  updatePick(); furnSync(); finSync();
 }
 $('dYear').addEventListener('change', render);
 [['uE','uW'],['uW','uE']].forEach(([a, b]) => $(a).addEventListener('click', () => { $(a).setAttribute('aria-pressed','true'); $(b).setAttribute('aria-pressed','false'); render(); }));
@@ -1095,7 +1106,7 @@ const LAYERS = {'01':'ชั้นล่าง','02':'ชั้นบน','03':'
   '09':'ระบบระบายน้ำ-บำบัด','10':'ระบบปรับอากาศ','11':'ระบบสื่อสาร-ทีวี','12':'ภูมิทัศน์-รั้ว-ถนน','13':'ดวงโคม-หลอดไฟ'};
 const GROUP_OF = {'01':'gf','02':'ff','03':'roof','04':'ext','05':'int','06':'int','07':'elec','08':'water','09':'drain','10':'ac','11':'tc','12':'site','13':'lamp'};
 const UTIL = ['water','drain','elec','ac','tc','lamp'];
-const vis = {roof:true, ff:true, gf:true, ext:true, int:true, site:true, water:false, drain:false, elec:false, lamp:true, ac:false, tc:false, dims:false, extroof:true};
+const vis = {roof:true, ff:true, gf:true, ext:true, int:true, site:true, water:false, drain:false, elec:false, lamp:true, ac:false, tc:false, dims:false, extroof:true, fin:true};
 let cut = null, xray = false;
 const objs = [], byKey = {};
 const codeOf = n => { const m = /^(\d\d)\|(.*)$/.exec(n || ''); return m ? [m[1], m[2]] : null; };
@@ -1129,7 +1140,7 @@ function applyVis(){
     });
   });
   dimGroup.visible = vis.dims;
-  applyFurnVis();
+  applyFurnVis(); applyFinVis();
 }
 function syncChips(){ for (const g in vis) { const el = $('g-' + g); if (el) el.checked = vis[g]; } $('g-xray').checked = xray; }
 document.querySelectorAll('input[data-g]').forEach(i => i.addEventListener('change', () => { vis[i.dataset.g] = i.checked; applyVis(); }));
@@ -1186,7 +1197,7 @@ function fail(){ $('loading').hidden = false; $('loading').textContent = 'โห
       const tree = objs.find(o => o.name.includes('ต้นไม้หน้าบ้าน')); if (tree) tree.extra = extra.children[0];
       const hedge = objs.find(o => o.name.includes('รั้วต้นไม้')); if (hedge) hedge.extra = [extra.children[1], extra.children[2]];
       root.updateMatrixWorld(true); const plants = []; root.traverse(o => { if (o.isMesh && !Array.isArray(o.material) && /^Plant_Green/.test(o.material.name)) plants.push(o); }); plants.forEach(o => bushify(o, T));
-      addGround(); buildDims(); TEX = T; furnInit();
+      addGround(); buildDims(); TEX = T; furnInit(); finInit();
       applyVis(); go('front', true);
       $('loading').hidden = true; render();
     }, () => fail());
@@ -1537,6 +1548,133 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'Delete' || e.key === 'Backspace'){ removeFurniture(fsel); e.preventDefault(); }
   else if (e.key === 'Escape') fselect(null);
 });
+
+
+/* ============================== finishes: SPC flooring + curtains / blinds (per house, DB.info.finish) ============================== */
+const finGroup = new THREE.Group(); finGroup.name = 'finishes'; scene.add(finGroup);
+const SPC = {walnut: {name: 'SPC ลายไม้วอลนัท', c0: [96, 62, 40], c1: [128, 86, 56]}, oak: {name: 'SPC ลายไม้โอ๊คอ่อน', c0: [184, 146, 104], c1: [214, 180, 136]}, grey: {name: 'SPC ลายไม้เทา', c0: [138, 134, 128], c1: [176, 172, 165]}};
+const CUR = {wave2: 'ม่านลอน ทึบแสง + โปร่ง', wave: 'ม่านลอน ทึบแสง', blind: 'มู่ลี่', roller: 'ม่านม้วน'};
+const CURCOL = {grey: ['เทาอ่อน', 0xa9a59e], beige: ['ครีม/เบจ', 0xd9ccb4], white: ['ขาว', 0xf1efea], charcoal: ['เทาเข้ม', 0x55575b], wood: ['ลายไม้ (มู่ลี่)', 0x9a6a44]};
+// floor areas in drawing coords [x0, y0, x1, y1, floor z] (wall centre lines; bathrooms and the laundry/prep room left out)
+const SPC_AREAS = [
+  [5.95, 0, 11.35, 6.2, 0.60], [2.9, 4.70, 5.95, 6.75, 0.60], [5.95, 6.2, 6.75, 6.75, 0.60],          // living/dining, walk-in closet, rear step
+  [0, 3.23, 2.89, 6.75, 0.45], [6.80, 6.2, 11.45, 8.5, 0.40],                                          // elderly room, rear kitchen
+  [2.9, -0.75, 5.91, 6.75, 3.70], [8.03, 0, 11.35, 3.56, 3.70], [8.03, 3.56, 9.59, 6.2, 3.70],          // bed-2/3, bed-1
+  [5.91, 3.0, 8.03, 4.2, 3.70], [5.91, 1.5, 6.97, 3.0, 3.70],                                           // upper hall / landing
+];
+// windows & glass doors: room, wall axis, inner face coord, inward sign, a0, a1, zb, zt, floor z
+const WINS = [
+  ['liv', 'x', 0.10, 1, 8.6, 10.6, 0.60, 2.60, 0.60], ['liv', 'y', 11.25, -1, 0.70, 2.26, 0.60, 2.55, 0.60],
+  ['din', 'y', 11.25, -1, 3.68, 5.20, 0.60, 2.55, 0.60], ['din', 'x', 6.10, -1, 6.99, 8.54, 0.60, 2.55, 0.60], ['din', 'x', 6.10, -1, 8.98, 10.63, 0.60, 2.55, 0.60],
+  ['closet', 'x', 6.65, -1, 3.66, 5.09, 1.45, 2.15, 0.60],
+  ['elder', 'y', 0.12, 1, 4.0, 5.9, 1.0, 2.2, 0.45], ['elder', 'x', 3.35, 1, 0.55, 2.25, 0.45, 2.5, 0.45],
+  ['kitchen', 'y', 11.33, -1, 7.2, 8.15, 0.40, 2.4, 0.40],
+  ['bed1', 'x', 0.075, 1, 8.5, 10.55, 3.70, 5.5, 3.70], ['bed1', 'y', 11.275, -1, 0.42, 0.93, 4.4, 5.55, 3.70], ['bed1', 'y', 11.275, -1, 2.73, 3.20, 4.4, 5.55, 3.70], ['bed1', 'x', 6.125, -1, 8.98, 9.49, 4.4, 5.6, 3.70],
+  ['bed2', 'y', 2.975, 1, -0.42, -0.02, 4.4, 5.55, 3.70], ['bed2', 'y', 2.975, 1, 1.87, 2.34, 4.4, 5.55, 3.70], ['bed2', 'x', -0.675, 1, 3.2, 5.2, 3.75, 5.5, 3.70],
+  ['bed3', 'y', 2.975, 1, 4.15, 5.67, 4.4, 5.55, 3.70], ['bed3', 'x', 6.675, -1, 3.61, 5.18, 4.4, 5.6, 3.70],
+  ['hall2', 'x', 0.075, 1, 6.4, 7.35, 3.70, 5.5, 3.70],
+  ['bath', 'x', 6.125, -1, 6.32, 6.89, 4.4, 5.6, 3.70], ['bath', 'x', 6.125, -1, 9.83, 10.44, 4.4, 5.6, 3.70],
+];
+const ROOMS = {liv: 'ห้องนั่งเล่น', din: 'ห้องทานข้าว', closet: 'ห้องแต่งตัว (ชั้นล่าง)', elder: 'ห้องผู้สูงอายุ', kitchen: 'ครัวหลังบ้าน', bed1: 'ห้องนอนใหญ่', bed2: 'ห้องนอน 2', bed3: 'ห้องนอน 3', hall2: 'โถงชั้นบน', bath: 'ห้องน้ำ'};
+const ROOM_DEFAULT_OFF = ['kitchen', 'bath'];
+let finSig = '', FINM = null;
+const fin = () => DB.info.finish || {};
+function spcTex(kind){
+  const k = SPC[kind]; const S = 1024, rows = 12, rh = S / rows, R = rng(kind.length * 977 + 13);
+  return canvasTex(S, (c) => {
+    for (let r = 0; r < rows; r++){
+      const off = (r % 3) * S / 3 + R() * S / 6;
+      for (let p = -2; p < 2; p++){
+        const x0 = off + p * S / 2, t = R(), col = k.c0.map((v, i) => Math.round(v + (k.c1[i] - v) * t));
+        c.fillStyle = `rgb(${col})`; c.fillRect(x0, r * rh, S / 2, rh);
+        for (let g = 0; g < 26; g++){ const y = r * rh + R() * rh, a = .05 + R() * .1; c.strokeStyle = R() < .5 ? `rgba(40,22,10,${a})` : `rgba(255,235,210,${a * .6})`; c.lineWidth = .6 + R() * 1.4;
+          c.beginPath(); c.moveTo(x0, y); for (let s = 1; s <= 8; s++) c.lineTo(x0 + s * S / 16, y + Math.sin(s * 1.3 + g) * rh * .06 * R()); c.stroke(); }
+        if (R() < .35){ c.fillStyle = 'rgba(50,28,14,.18)'; c.beginPath(); c.ellipse(x0 + R() * S / 2, r * rh + rh / 2, 10 + R() * 14, 3 + R() * 4, 0, 0, 7); c.fill(); }
+        c.fillStyle = 'rgba(25,15,8,.45)'; c.fillRect(x0, r * rh, 2, rh);
+      }
+      c.fillStyle = 'rgba(25,15,8,.4)'; c.fillRect(0, r * rh, S, 1.5);
+    }
+  }, {meters: 2.44});
+}
+function finMats(){
+  if (FINM) return FINM;
+  const std = o => new THREE.MeshStandardMaterial(o);
+  FINM = {spc: {}, sheer: new THREE.MeshPhysicalMaterial({color: 0xfbfaf6, roughness: .9, transparent: true, opacity: .55, side: THREE.DoubleSide, depthWrite: false}),
+    rod: std({color: 0x2a2a2c, roughness: .4, metalness: .6}), cloth: {}, slat: {}};
+  return FINM;
+}
+function spcMat(kind){ const M = finMats(); if (!M.spc[kind]) M.spc[kind] = new THREE.MeshStandardMaterial({map: spcTex(kind), roughness: .5, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2}); return M.spc[kind]; }
+function clothMat(col){ const M = finMats(); if (!M.cloth[col]) M.cloth[col] = new THREE.MeshStandardMaterial({color: CURCOL[col][1], roughness: .95, map: TEX.fabric.map, side: THREE.DoubleSide}); return M.cloth[col]; }
+function slatMat(col){ const M = finMats(); if (!M.slat[col]) M.slat[col] = new THREE.MeshStandardMaterial({color: CURCOL[col][1], roughness: .5, map: col === 'wood' ? TEX.wood.map : null}); return M.slat[col]; }
+function rectGeo(x0, y0, x1, y1, z){
+  const g = new THREE.BufferGeometry(), v = [P3(x0, y0, z), P3(x1, y0, z), P3(x1, y1, z), P3(x0, y1, z)];
+  g.setAttribute('position', new THREE.Float32BufferAttribute(v.flatMap(p => [p.x, p.y, p.z]), 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute([x0, y0, x1, y0, x1, y1, x0, y1], 2));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0], 3));
+  g.setIndex([0, 1, 2, 0, 2, 3]); return g;
+}
+function waveGeo(w, h, amp){ const seg = Math.max(8, Math.round(w / .025)), g = new THREE.PlaneGeometry(w, h, seg, 1), p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) p.setZ(i, Math.sin(p.getX(i) / .1 * Math.PI) * amp); g.computeVertexNormals(); return g; }
+function wallGroup(w){
+  const [, ax, c, sgn, a0, a1] = w, mid = (a0 + a1) / 2, g = new THREE.Group();
+  const d = ax === 'x' ? [0, sgn] : [sgn, 0];                    // inward direction in drawing coords
+  g.position.copy(ax === 'x' ? P3(mid, c, 0) : P3(c, mid, 0)); g.rotation.y = Math.atan2(d[0], -d[1]); return g;
+}
+function buildCurtain(w, type, col){
+  const [, , , , a0, a1, zb, zt, fz] = w, W = a1 - a0, g = wallGroup(w), M = finMats();
+  const add = (geo, m, x, y, z) => { const s = new THREE.Mesh(geo, m); s.position.set(x, y, z); s.castShadow = m !== M.sheer; s.receiveShadow = true; g.add(s); return s; };
+  const ceil = fz + (fz > 3 ? 2.65 : 2.75), top = Math.min(ceil - .02, zt + .2), full = zb - fz < .35, bot = full ? fz + .015 : zb - .15, H = top - bot;
+  if (type === 'wave2' || type === 'wave'){
+    const RW = W + .4; const rod = add(new THREE.CylinderGeometry(.012, .012, RW, 8), M.rod, 0, top + .03, .17); rod.rotation.z = Math.PI / 2;
+    if (type === 'wave2') add(waveGeo(RW - .06, H, .035), M.sheer, 0, bot + H / 2, .09);
+    const pw = Math.max(.35, RW * (type === 'wave2' ? .26 : .3));
+    [-1, 1].forEach(s => add(waveGeo(pw, H, .05), clothMat(col), s * (RW / 2 - pw / 2 - .02), bot + H / 2, .17));
+  } else if (type === 'blind'){
+    const bw = W - .04, bh = zt - zb - .04, n = Math.floor(bh / .045), geos = [];
+    for (let i = 0; i < n; i++){ const s = new THREE.BoxGeometry(bw, .025, .003); s.rotateX(-.45); s.translate(0, zt - .06 - i * .045, .045); geos.push(s); }
+    const mg = mergeGeometries(geos); add(mg, slatMat(col === 'wood' ? 'wood' : col), 0, 0, 0);
+    add(new THREE.BoxGeometry(bw + .02, .04, .05), slatMat(col === 'wood' ? 'wood' : col), 0, zt - .03, .045);
+    [-1, 1].forEach(s => add(new THREE.BoxGeometry(.003, bh, .003), M.rod, s * bw * .3, zb + bh / 2 + .02, .046));
+  } else if (type === 'roller'){
+    const RW = W + .1, down = (zt - zb) * .55;
+    const t = add(new THREE.CylinderGeometry(.03, .03, RW, 12), clothMat(col), 0, zt + .05, .07); t.rotation.z = Math.PI / 2;
+    add(new THREE.PlaneGeometry(RW - .02, down), clothMat(col), 0, zt + .02 - down / 2, .045);
+    add(new THREE.BoxGeometry(RW - .02, .03, .015), M.rod, 0, zt + .02 - down, .045);
+  }
+  g.userData.fz = fz; return g;
+}
+function rebuildFinishes(){
+  while (finGroup.children.length) finGroup.remove(finGroup.children[0]);
+  const f = fin();
+  if (f.spc && SPC[f.spc]){ const m = spcMat(f.spc); SPC_AREAS.forEach(([x0, y0, x1, y1, z]) => { const s = new THREE.Mesh(rectGeo(x0, y0, x1, y1, z + .004), m); s.receiveShadow = true; s.userData.fz = z; finGroup.add(s); }); }
+  const rooms = f.rooms || {};
+  WINS.forEach(w => { const r = rooms[w[0]], type = r === undefined || r === 'def' ? (ROOM_DEFAULT_OFF.includes(w[0]) ? '' : f.cur) : r;
+    if (type && CUR[type]) finGroup.add(buildCurtain(w, type, f.col && CURCOL[f.col] ? f.col : 'grey')); });
+  finSig = JSON.stringify(f); applyFinVis(); renderFin();
+}
+function applyFinVis(){
+  finGroup.visible = vis.fin !== false && cut !== 'mep';
+  finGroup.children.forEach(o => o.visible = !(cut === 'gf' && o.userData.fz > 3));
+  if (FINM && FINM._x !== xray){ FINM._x = xray; [...Object.values(FINM.spc), ...Object.values(FINM.cloth), ...Object.values(FINM.slat), FINM.rod].forEach(m => { m.transparent = xray; m.opacity = xray ? .2 : 1; m.depthWrite = !xray; m.needsUpdate = true; }); }
+}
+function finSync(){ if (TEX && JSON.stringify(fin()) !== finSig) rebuildFinishes(); }
+function finInit(){ rebuildFinishes(); }
+let finSaveT = null;
+function setFinish(patch){ DB.info.finish = Object.assign({}, fin(), patch); save(); rebuildFinishes(); clearTimeout(finSaveT); finSaveT = setTimeout(() => cloudSaveProfile(), 1200); }
+function renderFin(){
+  const f = fin(), opt = (o, v) => Object.entries(o).map(([k, n]) => `<option value="${k}"${k === v ? ' selected' : ''}>${esc(Array.isArray(n) ? n[0] : n.name || n)}</option>`).join('');
+  $('finSpc').innerHTML = '<option value="">ไม่มี (พื้นเดิม)</option>' + opt(SPC, f.spc || '');
+  $('finCur').innerHTML = '<option value="">ไม่มี</option>' + opt(CUR, f.cur || '');
+  $('finCol').innerHTML = opt(CURCOL, f.col || 'grey');
+  const rooms = f.rooms || {};
+  $('finRooms').innerHTML = Object.entries(ROOMS).map(([k, n]) => { const v = rooms[k] === undefined ? 'def' : rooms[k], dflt = ROOM_DEFAULT_OFF.includes(k) ? 'ไม่มี (ค่าเริ่มต้น)' : 'ตามแบบหลัก';
+    return `<div class="row"><span class="dt">${WINS.filter(w => w[0] === k).length} บาน</span><span class="t"><b>${esc(n)}</b></span><span><select data-froom="${k}" style="width:auto">
+      <option value="def"${v === 'def' ? ' selected' : ''}>${dflt}</option><option value=""${v === '' ? ' selected' : ''}>ไม่มี</option>${opt(CUR, v)}</select></span></div>`; }).join('');
+}
+$('finSpc').addEventListener('change', e => setFinish({spc: e.target.value}));
+$('finCur').addEventListener('change', e => setFinish({cur: e.target.value}));
+$('finCol').addEventListener('change', e => setFinish({col: e.target.value}));
+$('finRooms').addEventListener('change', e => { const s = e.target.closest('[data-froom]'); if (!s) return; const rooms = Object.assign({}, fin().rooms || {}); if (s.value === 'def') delete rooms[s.dataset.froom]; else rooms[s.dataset.froom] = s.value; setFinish({rooms}); });
 
 /* boot */
 resetForm(); fillLoan(); fillInfo(); fillCloud(); cloudPull(true);
