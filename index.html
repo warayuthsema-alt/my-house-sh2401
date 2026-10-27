@@ -1577,6 +1577,7 @@ const WINS = [
 ];
 const ROOMS = {liv: 'ห้องนั่งเล่น', din: 'ห้องทานข้าว', closet: 'ห้องแต่งตัว (ชั้นล่าง)', elder: 'ห้องผู้สูงอายุ', kitchen: 'ครัวหลังบ้าน', bed1: 'ห้องนอนใหญ่', bed2: 'ห้องนอน 2', bed3: 'ห้องนอน 3', hall2: 'โถงชั้นบน', bath: 'ห้องน้ำ'};
 const ROOM_DEFAULT_OFF = ['kitchen', 'bath'];
+const CEIL_OF = {0.60: 3.30, 0.45: 3.40, 0.40: 2.95, 3.70: 6.30};          // ceiling level above each floor
 let finSig = '', FINM = null;
 const fin = () => DB.info.finish || {};
 function spcTex(kind){
@@ -1600,7 +1601,7 @@ function finMats(){
   if (FINM) return FINM;
   const std = o => new THREE.MeshStandardMaterial(o);
   FINM = {spc: {}, sheer: new THREE.MeshPhysicalMaterial({color: 0xfbfaf6, roughness: .9, transparent: true, opacity: .55, side: THREE.DoubleSide, depthWrite: false}),
-    rod: std({color: 0x2a2a2c, roughness: .4, metalness: .6}), cloth: {}, slat: {}};
+    rod: std({color: 0x2a2a2c, roughness: .4, metalness: .6}), track: std({color: 0xf2f1ee, roughness: .5}), cloth: {}, slat: {}};
   return FINM;
 }
 function spcMat(kind){ const M = finMats(); if (!M.spc[kind]) M.spc[kind] = new THREE.MeshStandardMaterial({map: spcTex(kind), roughness: .5, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2}); return M.spc[kind]; }
@@ -1623,9 +1624,9 @@ function wallGroup(w){
 function buildCurtain(w, type, col){
   const [, , , , a0, a1, zb, zt, fz] = w, W = a1 - a0, g = wallGroup(w), M = finMats();
   const add = (geo, m, x, y, z) => { const s = new THREE.Mesh(geo, m); s.position.set(x, y, z); s.castShadow = m !== M.sheer; s.receiveShadow = true; g.add(s); return s; };
-  const ceil = fz + (fz > 3 ? 2.65 : 2.75), top = Math.min(ceil - .02, zt + .2), full = zb - fz < .35, bot = full ? fz + .015 : zb - .15, H = top - bot;
+  const ceil = CEIL_OF[fz] || fz + 2.6, top = ceil - .03, bot = fz + .015, H = top - bot;   // wave curtains run ceiling to floor
   if (type === 'wave2' || type === 'wave'){
-    const RW = W + .4; const rod = add(new THREE.CylinderGeometry(.012, .012, RW, 8), M.rod, 0, top + .03, .17); rod.rotation.z = Math.PI / 2;
+    const RW = W + .4; add(new THREE.BoxGeometry(RW, .025, .07), M.track, 0, ceil - .0125, .13);
     if (type === 'wave2') add(waveGeo(RW - .06, H, .035), M.sheer, 0, bot + H / 2, .09);
     const pw = Math.max(.35, RW * (type === 'wave2' ? .26 : .3));
     [-1, 1].forEach(s => add(waveGeo(pw, H, .05), clothMat(col), s * (RW / 2 - pw / 2 - .02), bot + H / 2, .17));
@@ -1655,7 +1656,7 @@ function rebuildFinishes(){
 function applyFinVis(){
   finGroup.visible = vis.fin !== false && cut !== 'mep';
   finGroup.children.forEach(o => o.visible = !(cut === 'gf' && o.userData.fz > 3));
-  if (FINM && FINM._x !== xray){ FINM._x = xray; [...Object.values(FINM.spc), ...Object.values(FINM.cloth), ...Object.values(FINM.slat), FINM.rod].forEach(m => { m.transparent = xray; m.opacity = xray ? .2 : 1; m.depthWrite = !xray; m.needsUpdate = true; }); }
+  if (FINM && FINM._x !== xray){ FINM._x = xray; [...Object.values(FINM.spc), ...Object.values(FINM.cloth), ...Object.values(FINM.slat), FINM.rod, FINM.track].forEach(m => { m.transparent = xray; m.opacity = xray ? .2 : 1; m.depthWrite = !xray; m.needsUpdate = true; }); }
 }
 function finSync(){ if (TEX && JSON.stringify(fin()) !== finSig) rebuildFinishes(); }
 function finInit(){ rebuildFinishes(); }
